@@ -16,7 +16,8 @@ $(document).on('keydown', function (event) {
     }
 });
 // listen for clicks
-$("#canvas").bind('click touchstart', function() {
+$("#canvas").on('touchstart', function(event) {
+    event.preventDefault();
     Jump();
 });
 
@@ -42,7 +43,7 @@ var IMAGES = {
     coin: [],
     starfield: undefined,
     fuelTank: undefined,
-    astroid: undefined,
+    asteroid: undefined,
 };
 
 loadImages();
@@ -114,9 +115,9 @@ function loadImages() {
     tank.src = 'images/fuel-tank.png';
     IMAGES.fuelTank = tank;
 
-    var astroid = new Image();
-    astroid.src = 'images/astroid.png';
-    IMAGES.astroid = astroid;
+    var asteroid = new Image();
+    asteroid.src = 'images/asteroid.png';
+    IMAGES.asteroid = asteroid;
 
     var starfield = new Image();
     starfield.src = 'images/starfield.png';
@@ -133,9 +134,9 @@ function init(numoflives) {
         GO_TEXT: ['', 'GO!!'],
         MIN_PLATFORM_HEIGHT: 80,
         MAX_PLATFORM_HEIGHT: 320,
-        MIN_ASTROID_R: 10,
-        MAX_ASTROID_R: 25,
-        ASTROID_CUSHION: 1.3,
+        MIN_ASTEROID_R: 10,
+        MAX_ASTEROID_R: 25,
+        ASTEROID_CUSHION: 1.3,
         LEFT: false,
         RIGHT: true,
         POSITION_SPACE: 20,
@@ -156,7 +157,7 @@ function init(numoflives) {
     };
     
     Game = {
-        astroids: [],
+        asteroids: [],
         platforms: [],
         fuelTanks: [],
         xLives: [],
@@ -165,7 +166,7 @@ function init(numoflives) {
         walls: [],
         text: C.READY_TEXT,
         speed: 3,
-        astroidFrequency: 120,  // Less means more
+        asteroidFrequency: 120,  // Less means more
         platformFrequency: 70,
         score: 0,
         jumpSpeed: 3,
@@ -284,7 +285,7 @@ function init(numoflives) {
     // return setInterval(GameLoop, 10);
 }
 
-function Astroid(x, r) {
+function Asteroid(x, r) {
     this.x = x;
     this.y = HEIGHT + r;
     this.h = r * 2;
@@ -297,13 +298,13 @@ function Astroid(x, r) {
             this.hitPlayer = true;
         } 
         
-        var c = this.r * C.ASTROID_CUSHION;
+        var c = this.r * C.ASTEROID_CUSHION;
         // Circular Collision
-        // ctx.drawImage(IMAGES.astroid, this.x - this.r - c, this.y - this.r - c, this.r * 2 + c * 2, this.r * 2 + c * 2);
+        // ctx.drawImage(IMAGES.asteroid, this.x - this.r - c, this.y - this.r - c, this.r * 2 + c * 2, this.r * 2 + c * 2);
         // Draw.circle(this.x, this.y, this.r, this.hitPlayer);
 
         // Rectangular Collision
-        ctx.drawImage(IMAGES.astroid, this.x - c, this.y - c, this.w + c * 2, this.h + c * 2);
+        ctx.drawImage(IMAGES.asteroid, this.x - c, this.y - c, this.w + c * 2, this.h + c * 2);
         // Draw.rect(this.x, this.y, this.w, this.h, this.hitPlayer);
     };
 }
@@ -500,14 +501,14 @@ Random = {
     platformImage: function() {
         return this.range(0, IMAGES.platform.length - 1);
     },
-    newAstroidReady: function() {
-        return this.range(0, Game.astroidFrequency) === 0;
+    newAsteroidReady: function() {
+        return this.range(0, Game.asteroidFrequency) === 0;
     },
-    astroidX: function() {
+    asteroidX: function() {
         return this.range(0, WIDTH);
     },
-    astroidR: function() {
-        return this.range(C.MIN_ASTROID_R, C.MAX_ASTROID_R);
+    asteroidR: function() {
+        return this.range(C.MIN_ASTEROID_R, C.MAX_ASTEROID_R);
     },
     newTankReady: function() {
         return this.range(0, C.FUEL_FREQUENCY) === 0;
@@ -553,16 +554,16 @@ Collision = {
 };
 
 function GameLoop() {
-    var hitAstroid = false;
+    var hitAsteroid = false;
     var extraLife = false;
     Draw.clear();
     ctx.drawImage(IMAGES.starfield, 0, 0, WIDTH, HEIGHT);
     if (Player.lives >= 0){
-        if (Random.newAstroidReady()) {
-            Game.astroids.push(
-                new Astroid(
-                    Random.astroidX(), 
-                    Random.astroidR()
+        if (Random.newAsteroidReady()) {
+            Game.asteroids.push(
+                new Asteroid(
+                    Random.asteroidX(), 
+                    Random.asteroidR()
                     )
                 );
         }
@@ -588,18 +589,18 @@ function GameLoop() {
         }
     }
 
-    for (var i = 0; i < Game.astroids.length; i++) {
-        var astroid = Game.astroids[i];
-        astroid.update();
-        if (astroid.hitPlayer) {
+    for (var i = 0; i < Game.asteroids.length; i++) {
+        var asteroid = Game.asteroids[i];
+        asteroid.update();
+        if (asteroid.hitPlayer) {
             Player.lives--;
-            hitAstroid = true;
+            hitAsteroid = true;
             if (Player.lives < 0) {
                 Game.text = C.GAMEOVER_TEXT;
             }
         }
-        if (astroid.y < -astroid.h || astroid.hitPlayer) {
-            Game.astroids.splice(i, 1);
+        if (asteroid.y < -asteroid.h || asteroid.hitPlayer) {
+            Game.asteroids.splice(i, 1);
             Game.score += 1;
         }
         if (Random.newTankReady()) {
@@ -681,7 +682,7 @@ function GameLoop() {
     Draw.text(40, 31, Game.score);
     Draw.jetFuel();
     Player.update();
-    if (hitAstroid) {
+    if (hitAsteroid) {
         ctx.fillStyle = 'pink';
         Draw.rect(0, 0, WIDTH, HEIGHT, true);
     }
@@ -693,7 +694,6 @@ function GameLoop() {
     if (Game.text == C.GO_TEXT){
         if (Game.holdGo > 0) {
             Game.holdGo -= 1;
-            console.log('hello')
         } else {
             Game.text = ['', ''];
         }
