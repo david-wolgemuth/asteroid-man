@@ -1,20 +1,26 @@
 <!DOCTYPE html>
-<html width="300" height="550">
+<html>
 <head>
-    <title>Asteroid-Man</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    <script type="text/javascript" src="script.js"></script>
-    <meta charset="UTF-8">
-    <style type="text/css">
-	    body {
-	    	background-color: #AAA;
-	    }
-	    #canvas {
-	    	background-color: #FFF;
-	    }
+    <title>Astroid-Man</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimal-ui, initial-scale=1, maximum-scale=1, user-scalable=0" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<!-- <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" /> -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script type="text/javascript" src="asteroid-man.js"></script>
+	<style type="text/css">
+	    body { 
+	    	margin: 0; 
+	    	padding: 0; 
+	    	background: #AAA;}
+		canvas { 
+			display: block; 
+			margin: 0 auto; 
+			background: #fff; 
+		}
+
     </style>
 </head>
 <body>
-	<canvas id="canvas" width="300" height="550"></canvas>
+	<canvas id="canvas" width="345" height="500"></canvas>
 </body>
 </html>
