@@ -1,4 +1,10 @@
 $(document).ready(function() {
+
+$(".start-hidden").hide();
+// $("#loading-bar-outline, #loading-bar-outline *").show();
+// $("#canvas").hide();
+// $("#menu").hide();
+
 window.requestAnimFrame = (function(){
     return  window.requestAnimationFrame       || 
             window.webkitRequestAnimationFrame || 
@@ -15,12 +21,6 @@ WIDTH = 345;
 HEIGHT =  500;
 RATIO = WIDTH / HEIGHT;
 
-// Text
-GAMEOVER_TEXT = ['Game', 'Over'];
-READY_TEXT = ['Ready?', ''];
-GO_TEXT = ['', 'GO!!'];
-BLANK_TEXT = ['', ''];
-
 // Player
 FALLING_IMAGE_SWITCH = 0.1;
 PLAYER_W = 20;
@@ -32,7 +32,11 @@ MAX_PLATFORM_HEIGHT = 320;
 MIN_ASTEROID_R = 10;
 MAX_ASTEROID_R = 25;
 ASTEROID_CUSHION = 0.7;
-ASTROID_ROTATION_SPEED = 5;
+ASTEROID_ROTATION_SPEED = 3;
+ASTEROID_MAX_X = 2;
+DEBREE_W = 8;
+DEBREE_ROTATION_SPEED = 7;
+DEBREE_MAX_X = 4;
 POSITION_SPACE = 20;
 PLATFORM_W = 5;
 FUEL_W = 20;
@@ -72,7 +76,6 @@ JUMP_SPEED = 3;
 DRIFT_SPEED = 0.1;
 GAME_SPEED = 3;
 
-
 var Images = {
     falling: {
         right: [],
@@ -88,6 +91,17 @@ var Images = {
     starfield: [],
     fuel: [],
     asteroid: [],
+    totalNumber: 0,
+    loadedNumber: 0,
+
+    onload: function() {
+        Images.loadedNumber++;
+        var percent = 100 * Images.loadedNumber / Images.totalNumber;
+        $("#loading-bar").css("width", percent + "%");
+        if (percent == 100) {
+            MenuBar.init();
+        }
+    },
 
     load: function(destination, path, length) {
         for (var i = 0; i < length; i++) {
@@ -95,11 +109,14 @@ var Images = {
             path_i = 'images/' + path + '/' + i + '.png';
             image.src = path_i;
             destination.push(image);
+            image.onload = Images.onload;
+            Images.totalNumber++;
         }
     },
 
     init: function() {
         var destinations = [
+            [Images.starfield, 'starfield', 1],
             [Images.falling.left, 'falling-left', 15],
             [Images.falling.right, 'falling-right', 15],
             [Images.jumping.left, 'jumping-left', 9],
@@ -107,7 +124,6 @@ var Images = {
             [Images.jetPack, 'jet-pack', 10],
             [Images.platform, 'platform', 14],
             [Images.coin, 'coin', 6],
-            [Images.starfield, 'starfield', 1],
             [Images.fuel, 'fuel', 1],
             [Images.asteroid, 'asteroid', 1]
         ];
@@ -115,6 +131,7 @@ var Images = {
             var d = destinations[i];
             Images.load(d[0], d[1], d[2]);
         }
+        $("#totalImage").text(Images.totalNumber);
     }
 };
 Random = {
@@ -127,7 +144,7 @@ Random = {
     send: {
         coin:     function() { return Random.bool(COIN_FREQUENCY); },
         platform: function() { return Random.bool(PLATFORM_FREQUENCY); },
-        asteroid: function() { return Random.bool(ASTEROID_FREQUENCY); },
+        asteroid: function() { return Random.bool(Session.game.asteroidFrequency); },
         fuel:     function() { return Random.bool(FUEL_FREQUENCY); },
         life:     function() { return Random.bool(XLIFE_FREQUENCY); },
     },
@@ -219,7 +236,7 @@ Draw = {
     },
     text: function(x, y, t, font) {
         if (!font) {
-            Draw.ctx.font = '32px Arial';
+            Draw.ctx.font = '32px Time-N-Space gold';
         } else {
             Draw.ctx.font = font;
         }
@@ -241,6 +258,61 @@ Draw = {
         Draw.ctx.fillStyle = 'gold';
         this.rect(125, 5 + MAX_FUEL - fuel, 10, fuel, true);
     }
+};
+
+MenuBar = {
+    init: function() {
+        $("#loading-bar-outline").hide();
+        $("#menu, #menu *").show();
+        $("#show-tutorial").click(function() { MenuBar.tutorial(); });
+        $("#show-credits").click(function() { MenuBar.credits(); });
+        $("#play").click(function() { MenuBar.play(); });
+    },
+    play: function() {
+        $("#menu").hide();
+        $("body").css("background", "#AAA");
+        $("#canvas").show();
+        $("#return-main-menu").click(function() {
+            $("#play-again").hide();
+            $("#return-main-menu").hide();
+            $("#canvas").hide();
+            $("body").css("background-image", "url('images/starfield/0.png')");
+            $("body").css("background-size", "100% 100%");
+            window.cancelAnimationFrame(Session.animation);
+            $("#menu").show();
+        });
+        $("#play-again").click(function() {
+            $("#play-again").hide();
+            $("#return-main-menu").hide();
+            window.cancelAnimationFrame(Session.animation);
+            Session.init();
+        });
+        Session.init();
+    },
+    tutorial: function() {
+        $("#menu").hide();
+        $("#tutorial").show();
+        var i = 1;
+        $("#tut-" + i).show();
+        $("#continue").click(function() {
+            $("#tut-" + i).hide();
+            i++;
+            if (i == 7) {
+                $("#tutorial").hide();
+                $("#menu").show();
+            } else {
+                $("#tut-" + i).show();
+            }
+        });
+    },
+    credits: function() {
+        $("#menu").hide();
+        $("#credits").show();
+        $("#return").click(function() {
+            $("#credits").hide();
+            $("#menu").show();
+        });
+    },
 };
 
 Session = {
@@ -267,70 +339,62 @@ Session = {
         Session.ios = (Session.ua.indexOf('iphone') > -1 || Session.ua.indexOf('ipad') > -1) ? true : false;
 
         // listen for clicks
-        window.addEventListener('click', function(e) {
+        Session.canvas.addEventListener('click', function(e) {
             e.preventDefault();
         }, false);
         // listen for touches
-        window.addEventListener('touchstart', function(e) {
+        Session.canvas.addEventListener('touchstart', function(e) {
             e.preventDefault();
             Session.click();
         }, false);
-        window.addEventListener('keydown', function (e) {
+        window.addEventListener('keydown', function(e) {
             if (e.keyCode == 32) {
                 e.preventDefault();
                 Session.click();
             }
         });
-        window.addEventListener('touchmove', function(e) {
+        Session.canvas.addEventListener('touchmove', function(e) {
             e.preventDefault();
         }, false);
-        window.addEventListener('touchend', function(e) {
+        Session.canvas.addEventListener('touchend', function(e) {
             e.preventDefault();
         }, false);
-        Images.init();
         Draw.ctx = Session.ctx;
         Session.resize();
         Session.game = new Game();
-        Session.game.text = READY_TEXT;
+        $("#ready").show();
         Session.loop();
     },
-
+    checkText: function() {
+        if ($("#ready").is(":visible")) {
+            $("#ready").hide();
+            $("#go").show();
+            Session.game.running = true;
+            return true;
+        } else if ($("#game-over").is(":visible")) {
+            $("#game-over").hide();
+            $("#play-again").show();
+            $("#return-main-menu").show();
+        }
+    },
     resize: function() {
         Session.height = window.innerHeight;
         Session.width = Session.height * RATIO;
         Session.ratio = HEIGHT / Session.height;
-        if (Session.android || Session.ios) {
-            document.body.style.height = (window.innerHeight + 100) + 'px';
-        }
-        window.scrollTo(0, 1);
         Session.canvas.style.width = Session.width + 'px';
         Session.canvas.style.height = Session.height + 'px';
-
         Session.scale = Session.width / Session.height;
         Session.offset.top = Session.canvas.offsetTop;
         Session.offset.left = Session.canvas.offsetLeft;
-
-        window.setTimeout(function() {
-                window.scrollTo(0,1);
-        }, 1);
     },
     loop: function() {
         Session.game.loop();
-        requestAnimationFrame(Session.loop);
+        Session.animation = requestAnimationFrame(Session.loop);
     },
-
     click: function() {
+        Session.checkText();
         if (Session.game.running === true) {
-            Session.game.player.jump();
-        }
-        else {
-            if (Session.game.text == GAMEOVER_TEXT) {
-                Session.game = new Game();
-                Session.game.text = READY_TEXT;
-            } else if (Session.game.text == READY_TEXT) {
-                Session.game.running = true;
-                Session.game.text = GO_TEXT;
-            }
+                Session.game.player.jump();
         }
     }
 };    
@@ -343,11 +407,14 @@ function Game() {
     this.fuel = [];
     this.lives = [];
     this.coins = [];
+    this.debree = [];
     this.allObjects = [this.platforms, 
-        this.fuel, this.lives, this.coins, this.asteroids];
-    this.text = GO_TEXT;
+        this.fuel, this.lives, this.coins, this.asteroids, this.debree];
     this.holdGo = 100;
     this.events = [];
+    this.asteroidFrequency = ASTEROID_FREQUENCY;
+    this.stage = 0;
+    this.asteroidsSent = 0;
 
     this.updateObjects = function() {
         for (var i = 0; i < this.allObjects.length; i++) {
@@ -373,13 +440,14 @@ function Game() {
                 object.draw();
             }
         }
-    }
+    };
 
     this.sendObjects = function() {
         if (Random.send.asteroid()) {
             var asteroid = new Sprite();
             asteroid.asteroid(Random.x.asteroid(), Random.r.asteroid());
             this.asteroids.push(asteroid);
+            this.asteroidsSent += 1;
         }
         if (Random.send.coin()) {
             var coin = new Sprite();
@@ -404,19 +472,19 @@ function Game() {
     };
 
     this.holdGoFunction = function() {
-        if (this.text == GO_TEXT){
+        if ($("#go").is(":visible")){
             if (this.holdGo > 0) {
                 this.holdGo -= 1;
             } else {
-                this.text = BLANK_TEXT;
+                $("#go").fadeOut(1000);
             }
         }  
     };
 
     this.gameOver = function() {
-        this.text = GAMEOVER_TEXT;
+        $("#game-over").show();
         this.running = false;
-    }
+    };
 
     this.processEvents = function() {
         for (var i = 0; i < this.events.length; i++) {
@@ -457,13 +525,11 @@ function Game() {
         this.drawObjects();
         this.player.draw();
         this.processEvents();
-        if (this.player.lives < 0) {
+        if (this.player.lives < 0 && this.running === true) {
             this.gameOver();
         }
 
         this.holdGoFunction();
-        Draw.text(60, 200, this.text[0], '60px Arial');
-        Draw.text(80, 300, this.text[1], '60px Arial');
         Draw.score(this.player.score);
         Draw.remainingFuel(this.player.fuel);
         Draw.remainingLives(this.player.lives);
@@ -478,8 +544,8 @@ function Player() {
     this.driftSpeed = DRIFT_SPEED;
     
     // Status
-    this.lives = 3;
-    this.fuel = 15;
+    this.lives = -1;
+    this.fuel = 16;
     this.score = 0;
 
     // Images
@@ -613,51 +679,61 @@ function Player() {
 
 function Sprite() {
     this.player = Session.game.player;
-    this.arg = [];
+    this.arg = '';
     this.type = '';
-    this.makeObject = function(x, y, args) {
+    this.makeObject = function(x, y) {
         this.x = x;
         this.y = y;
-        this.args = args;
     };
-    this.makeRect = function(x, y, w, h, destroy, args) {
-        this.makeObject(x, y, args);
+    this.makeRect = function(x, y, w, h) {
+        this.makeObject(x, y);
         this.w = w;
         this.h = h;
         this.update = function() {
             this.y -= GAME_SPEED;
+            if (this.xVel) {
+                this.x += this.xVel;
+            }
+            if (this.yVel) {
+                this.y += this.yVel;
+            }
             if (Collision.rectRect(this.player, this)) {
-                this.destroy = destroy;
-                this.arg = this.args[0];
-                if (this.movePlayer === true) {
-                    this.player.collision(this);
-                }
+                this.collision();
             }
             if (this.y < -this.h) {
                 this.destroy = true;
-                this.arg = this.args[1];
             }
         };
     };
-    this.makeCircle = function(x, y, r, destroy, args) {
-        this.makeObject(x, y, args);
+    this.makeCircle = function(x, y, r) {
+        this.makeObject(x, y);
         this.r = r;
         this.update = function() {
             this.y -= GAME_SPEED;
             if (Collision.rectCircle(this.player, this)) {
-                this.destroy = destroy;
-                this.arg = this.args[0];
+                this.collision();
             }
-            if (this.y < -this.r) {
+            if (this.y < -2*this.r) {
                 this.destroy = true;
             }
         };
     };
     this.asteroid = function(x, w) {
+        this.xVel = ASTEROID_MAX_X / Random.range(-10, 10);
         this.type = 'Asteroid';
         this.angle = Random.range(0, 300);
-        this.spinSpeed = ASTROID_ROTATION_SPEED / Random.range(1, 10);
+        this.spinSpeed = ASTEROID_ROTATION_SPEED / Random.range(-10, 10);
         this.makeRect(x, HEIGHT + w, w, w, true, [HIT_PLAYER, ASTEROID_PASSED]);
+        this.collision = function() {
+            this.destroy = true;
+            this.arg = HIT_PLAYER;
+            for (var i = 0; i < Math.floor(this.w / 4); i++) {
+                var debree = new Sprite();
+                var width = 10 * (DEBREE_W / Random.range(5, 10));
+                debree.debree(this.x, this.y, width);
+                Session.game.debree.push(debree);
+            }
+        };
         this.draw = function() {
             var c = this.w * ASTEROID_CUSHION;
             this.angle += this.spinSpeed;
@@ -665,24 +741,48 @@ function Sprite() {
                 this.w + (c * 2), this.h + (c * 2), Math.floor(this.angle));
         };    
     };
+    this.debree = function(x, y, w) {
+        this.xVel = DEBREE_MAX_X / Random.range(-10, 10);
+        this.yVel = DEBREE_MAX_X / Random.range(-10, 10);
+        this.type = 'Asteroid-Debree';
+        this.angle = Random.range(0, 300);
+        this.spinSpeed = DEBREE_ROTATION_SPEED / Random.range(-10, 10);
+        this.makeRect(x, y, w, w, false, []);
+        this.collision = function() {};
+        this.draw = function() {
+            this.angle += this.spinSpeed;
+            Draw.rotatedImage(Images.asteroid[0], this.x, this.y, this.w, this.h, Math.floor(this.angle));
+        };
+    };
     this.platform = function(x, h, imageI) {
         this.type = 'Platform';
         this.makeRect(x, HEIGHT, PLATFORM_W, h, false, []);
         this.movePlayer = true;
+        this.collision = function() {
+            this.player.collision(this);
+        };
         this.draw = function() {
             Draw.image(Images.platform[imageI], this.x, this.y, this.w, this.h);
         };
     };
     this.fuel = function(x) {
         this.type = 'Fuel';
-        this.makeRect(x, HEIGHT, FUEL_W, FUEL_H, true, [FUEL_COLLECTED]);
+        this.makeRect(x, HEIGHT, FUEL_W, FUEL_H);
+        this.collision = function() {
+            this.destroy = true;
+            this.arg = FUEL_COLLECTED;
+        };
         this.draw = function() {
             Draw.image(Images.fuel[0], this.x, this.y, this.w, this.h);
         };
     };
     this.life = function(x) {
         this.type = 'Life';
-        this.makeRect(x, HEIGHT, PLAYER_W, PLAYER_H, true, [LIFE_COLLECTED]);
+        this.makeRect(x, HEIGHT, PLAYER_W, PLAYER_H);
+        this.collision = function() {
+            this.destroy = true;
+            this.arg = LIFE_COLLECTED;
+        };
         this.draw = function() {
             Draw.image(Images.falling.right[0], this.x, this.y, this.w * 1.5, this.h);
         };
@@ -690,7 +790,11 @@ function Sprite() {
     this.coin = function(x) {
         this.type = 'Coin';
         this.imageI = 0;
-        this.makeCircle(x, HEIGHT, COIN_R, true, [COIN_COLLECTED], 0);
+        this.makeCircle(x, HEIGHT, COIN_R);
+        this.collision = function() {
+            this.destroy = true;
+            this.arg = COIN_COLLECTED;
+        };
         this.draw = function() {
             this.imageI += COIN_SPIN;
             if (this.imageI >= Images.coin.length) {
@@ -700,7 +804,5 @@ function Sprite() {
         };
     };
 }
-
-    Session.init();
+    Images.init();
 });
-    

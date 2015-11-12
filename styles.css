@@ -1,0 +1,80 @@
+@font-face {
+	font-family: moonhouse;
+	src: url('images/fonts/moonhouse.ttf');
+}
+@font-face {
+	font-family: space-age;
+	src: url('images/fonts/space-age.ttf');
+}
+@font-face {
+	font-family: Time-N-Space;
+	src: url('images/fonts/Time-N-Space.ttf');
+}
+html, body {
+	width: 100%;
+	height: 100%;
+	font-family: Time-N-Space;
+	letter-spacing: 4px;
+	color: gold;
+}
+body { 
+	margin: 0; 
+	padding: 0;
+	background-image: url('images/starfield/0.png');
+	background-size: 100% 100%;
+}
+canvas { 
+	display: block; 
+	margin: 0 auto; 
+	background: #fff; 
+}
+#loading-bar-outline {
+	height: 30px;
+	line-height: 30px;
+	width: 80%;
+	margin: 200px auto;
+	border: 4px dotted gold;
+	text-align: center;
+}
+	#loading-bar-outline p {
+		position: absolute;
+		width: 80%;
+		height: 100%;
+		margin: auto;
+		font-family: space-age;
+		font-size: 32px;
+		color: gold;
+	}
+#loading-bar {
+	background: gold;
+	height: 100%;
+	width: 0%;
+	text-align: center;
+}
+#menu {
+	height: 100%;
+	width: 100%;
+	text-align: center;
+}
+	#menu h3 {
+		font-family: space-age;
+		font-size: 24px;
+	}
+#tutorial, #credits {
+	text-align: center;
+}
+#continue {
+	width: 100%;
+	position: fixed;
+	bottom: 0;
+}
+#ingame-messages {
+	text-align: center;
+}
+.ingame-message {
+	font-family: space-age;
+	position: fixed;
+	width: 100%;
+	bottom: 50%;
+	font-size: 50px;
+}
