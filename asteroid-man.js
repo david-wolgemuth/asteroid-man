@@ -544,7 +544,7 @@ function Player() {
     this.driftSpeed = DRIFT_SPEED;
     
     // Status
-    this.lives = -1;
+    this.lives = 3;
     this.fuel = 16;
     this.score = 0;
 
