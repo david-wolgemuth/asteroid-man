@@ -41,7 +41,7 @@ canvas {
 		width: 80%;
 		height: 100%;
 		margin: auto;
-		font-family: space-age;
+		/*font-family: space-age;*/
 		font-size: 32px;
 		color: gold;
 	}
@@ -57,7 +57,7 @@ canvas {
 	text-align: center;
 }
 	#menu h3 {
-		font-family: space-age;
+		/*font-family: space-age;*/
 		font-size: 24px;
 	}
 #tutorial, #credits {
@@ -72,7 +72,7 @@ canvas {
 	text-align: center;
 }
 .ingame-message {
-	font-family: space-age;
+	/*font-family: space-age;*/
 	position: fixed;
 	width: 100%;
 	bottom: 50%;

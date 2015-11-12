@@ -37,6 +37,10 @@ ASTEROID_MAX_X = 2;
 DEBREE_W = 8;
 DEBREE_ROTATION_SPEED = 7;
 DEBREE_MAX_X = 4;
+EXPLOSION_SPEED = 0.1;
+MIN_COMET_R = 20;
+MAX_COMET_R = 40;
+COMET_IMAGE_SPEED = 0.3;
 POSITION_SPACE = 20;
 PLATFORM_W = 5;
 FUEL_W = 20;
@@ -62,6 +66,7 @@ XLIFE_FREQUENCY = 800;
 COIN_FREQUENCY = 80;
 PLATFORM_FREQUENCY = 70;
 ASTEROID_FREQUENCY = 120;
+COMET_FREQUENCY = 200;
 
 // Maximum Values
 MAX_FUEL = 30;
@@ -91,6 +96,8 @@ var Images = {
     starfield: [],
     fuel: [],
     asteroid: [],
+    explosion: [],
+    comet: [],
     totalNumber: 0,
     loadedNumber: 0,
 
@@ -125,7 +132,9 @@ var Images = {
             [Images.platform, 'platform', 14],
             [Images.coin, 'coin', 6],
             [Images.fuel, 'fuel', 1],
-            [Images.asteroid, 'asteroid', 1]
+            [Images.asteroid, 'asteroid', 1],
+            [Images.explosion, 'explosion', 6],
+            [Images.comet, 'comet', 5],
         ];
         for (var i = 0; i < destinations.length; i++) {
             var d = destinations[i];
@@ -147,10 +156,12 @@ Random = {
         asteroid: function() { return Random.bool(Session.game.asteroidFrequency); },
         fuel:     function() { return Random.bool(FUEL_FREQUENCY); },
         life:     function() { return Random.bool(XLIFE_FREQUENCY); },
+        comet:    function() { return Random.bool(COMET_FREQUENCY); }
     },
     r: {
         platform: function() { return Random.range(MIN_PLATFORM_HEIGHT, MAX_PLATFORM_HEIGHT); },
-        asteroid: function() { return Random.range(MIN_ASTEROID_R, MAX_ASTEROID_R); }
+        asteroid: function() { return Random.range(MIN_ASTEROID_R, MAX_ASTEROID_R); },
+        comet:    function() { return Random.range(MIN_COMET_R, MAX_COMET_R); }
     },
     x: {
         platform: function() { 
@@ -158,9 +169,10 @@ Random = {
             return column * POSITION_SPACE  + ((column - 1) * PLATFORM_W);
         },
         asteroid: function() { return Random.range(0, WIDTH); },
-        coin: function() { return Random.range(0, WIDTH); },
-        life: function() { return Random.range(0, WIDTH); },
-        fuel: function() { return Random.range(FUEL_W, WIDTH - FUEL_W); }
+        coin:     function() { return Random.range(0, WIDTH); },
+        life:     function() { return Random.range(0, WIDTH); },
+        fuel:     function() { return Random.range(FUEL_W, WIDTH - FUEL_W); },
+        comet:    function() { return Random.range(0, WIDTH);}
     },
     image: {
         platform: function () { return Random.range(0, Images.platform.length - 1); }
@@ -408,8 +420,11 @@ function Game() {
     this.lives = [];
     this.coins = [];
     this.debree = [];
+    this.explosions = [];
+    this.comets = [];
     this.allObjects = [this.platforms, 
-        this.fuel, this.lives, this.coins, this.asteroids, this.debree];
+        this.fuel, this.lives, this.coins, this.asteroids, this.debree, 
+        this.explosions, this.comets];
     this.holdGo = 100;
     this.events = [];
     this.asteroidFrequency = ASTEROID_FREQUENCY;
@@ -469,6 +484,11 @@ function Game() {
             platform.platform(Random.x.platform(), Random.r.platform(), Random.image.platform());
             this.platforms.push(platform);
         }
+        if (Random.send.comet()) {
+            var comet = new Sprite();
+            comet.comet(Random.x.comet(), HEIGHT, Random.r.comet());
+            this.comets.push(comet);
+        }
     };
 
     this.holdGoFunction = function() {
@@ -522,8 +542,8 @@ function Game() {
         }
         this.updateObjects();
         this.player.update();
-        this.drawObjects();
         this.player.draw();
+        this.drawObjects();
         this.processEvents();
         if (this.player.lives < 0 && this.running === true) {
             this.gameOver();
@@ -679,9 +699,11 @@ function Player() {
 
 function Sprite() {
     this.player = Session.game.player;
+    this.specialUpdate = function() {};
     this.arg = '';
     this.type = '';
     this.makeObject = function(x, y) {
+        this.scoreValue = 0;
         this.x = x;
         this.y = y;
     };
@@ -690,6 +712,7 @@ function Sprite() {
         this.w = w;
         this.h = h;
         this.update = function() {
+            this.specialUpdate();
             this.y -= GAME_SPEED;
             if (this.xVel) {
                 this.x += this.xVel;
@@ -700,7 +723,8 @@ function Sprite() {
             if (Collision.rectRect(this.player, this)) {
                 this.collision();
             }
-            if (this.y < -this.h) {
+            if (this.y < -3*this.h) {
+                this.player.score += this.scoreValue;
                 this.destroy = true;
             }
         };
@@ -710,23 +734,28 @@ function Sprite() {
         this.r = r;
         this.update = function() {
             this.y -= GAME_SPEED;
+            this.specialUpdate();
             if (Collision.rectCircle(this.player, this)) {
                 this.collision();
             }
-            if (this.y < -2*this.r) {
+            if (this.y < -3*this.r) {
                 this.destroy = true;
             }
         };
     };
     this.asteroid = function(x, w) {
-        this.xVel = ASTEROID_MAX_X / Random.range(-10, 10);
         this.type = 'Asteroid';
+        this.makeRect(x, HEIGHT + w, w, w, true, [HIT_PLAYER, ASTEROID_PASSED]);
+        this.xVel = ASTEROID_MAX_X / Random.range(-10, 10);
+        this.scoreValue = 1;
         this.angle = Random.range(0, 300);
         this.spinSpeed = ASTEROID_ROTATION_SPEED / Random.range(-10, 10);
-        this.makeRect(x, HEIGHT + w, w, w, true, [HIT_PLAYER, ASTEROID_PASSED]);
         this.collision = function() {
             this.destroy = true;
             this.arg = HIT_PLAYER;
+            var explosion = new Sprite();
+            explosion.explosion(this.x, this.y, this.w*2);
+            Session.game.explosions.push(explosion);
             for (var i = 0; i < Math.floor(this.w / 4); i++) {
                 var debree = new Sprite();
                 var width = 10 * (DEBREE_W / Random.range(5, 10));
@@ -801,6 +830,55 @@ function Sprite() {
                 this.imageI = 0;
             }
             Draw.image(Images.coin[Math.floor(this.imageI)], this.x, this.y, this.r, this.r);
+        };
+    };
+    this.explosion = function(x, y, w) {
+        this.type = 'explosion';
+        this.imageI = 0;
+        this.makeRect(x, y, w, w);
+        this.collision = function() {};
+        this.draw = function() {
+            this.imageI += EXPLOSION_SPEED;
+            if (this.imageI >= Images.explosion.length) {
+                this.destroy = true;
+            } else {
+                Draw.image(Images.explosion[Math.floor(this.imageI)], this.x, this.y, this.w, this.h);
+            }
+        };
+    };
+    this.comet = function(x, y, w) {
+        this.type = 'comet';
+        this.makeRect(x, y, w, w);
+        this.scoreValue = 4;
+        this.imageI = 0;
+        this.direction = Random.bool(1) ? 1: -1;
+        this.xVel = 0;
+        this.yVel = -0.2;
+        this.maxXVel = Random.range(2, 6);
+        this.collision = function() {
+            this.imageI = 6;
+            this.arg = HIT_PLAYER;
+        };
+        this.specialUpdate = function() {
+            if (Math.abs(this.xVel) >= this.maxXVel) {
+                this.direction *= -1;
+            }
+            if (this.imageI >= 10) {
+                this.destroy = true;
+            }
+            this.xVel += 0.1 * this.direction;
+        };
+        this.draw = function() {
+            this.imageI += COMET_IMAGE_SPEED;
+            if (this.imageI >= Images.comet.length && this.imageI < 6) {
+                this.imageI = 0;
+            }
+            var degree = 90 + this.xVel*4;
+            if (this.imageI < 5)
+                Draw.rotatedImage(Images.comet[Math.floor(this.imageI)], this.x-this.w*1.5, this.y+this.h/2, this.w*1.8*2.2, this.h*2.2, degree);
+            else
+                Draw.rotatedImage(Images.explosion[Math.floor(this.imageI - 6)], this.x-this.w/2, this.y, this.w*2.2, this.h*2.2, degree);
+            // Draw.rect(this.x, this.y, this.w, this.h);
         };
     };
 }
