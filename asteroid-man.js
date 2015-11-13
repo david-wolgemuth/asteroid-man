@@ -489,9 +489,9 @@ MenuBar = {
             Session.init();
         });
         $("#continue").click(function() {
-            Sounds.coin[MenuBar.continueI].play();
             $("#tut-" + MenuBar.continueI).hide();
             MenuBar.continueI++;
+            Sounds.coin[MenuBar.continueI].play();
             if (MenuBar.continueI == 7) {
                 $("#tutorial").hide();
                 $("#menu").show();
@@ -507,7 +507,7 @@ MenuBar = {
         Session.init();
     },
     tutorial: function() {
-        MenuBar.continueI = 1;
+        MenuBar.continueI = 0;
         Sounds.coin[0].play();
         $("#menu").hide();
         $("#tutorial").show();
