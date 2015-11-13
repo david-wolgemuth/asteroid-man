@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Asteroid-Man</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimal-ui, initial-scale=1, maximum-scale=1, user-scalable=0" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script type="text/javascript" src="asteroid-man.js"></script>
+	<link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+	<div id="loading-bar-outline">
+		<p>Loading</p><div id="loading-bar"></div>
+	</div>
+	<div id="audio-options" class="start-hidden">
+		<h2>Audio</h2>
+		<h1><span id="audio-on">On</span> --- <span id="audio-off">Off</span></h1>
+	</div>
+	<div id="menu" class="start-hidden">
+		<h3>Asteroid-Man</h3>
+		<img src="images/falling-left/0.png" alt="Asteroid-Man" width="150">
+		<h1 id="play">Play</h1>
+		<h4 id="show-tutorial">Instructions</h4>
+		<h5 id="show-credits">Credits</h5>
+	</div>
+
+	<div id="tutorial" class="start-hidden tutorial">
+		<div id="tut-0" class="tutorial-page">
+			<h2 id="line-1">Avoid</h2>
+			<h2 id="line-2">Asteroids</h2>
+			<img src="images/asteroid/0.png" alt="Asteroid" width="100">
+		</div>
+		<div id="tut-1" class="start-hidden tutorial-page">
+			<h2 id="line-1">Flee</h2>
+			<h2 id="line-2">Fireballs</h2>
+			<img src="images/comet/0.png" alt="Fireball" width="200">
+		</div>
+		<div id="tut-2" class="start-hidden tutorial-page">
+			<h2>Collect</h2>
+			<h2>Coins</h2>
+			<img src="images/coin/0.png" alt="Coin" width="100">
+		</div>
+		<div id="tut-3" class="start-hidden tutorial-page">
+			<h2>Fill</h2>
+			<h2>Fuel</h2>
+			<img src="images/fuel/0.png" alt="Fuel" width="40">
+		</div>
+		<div id="tut-4" class="start-hidden tutorial-page">
+			<h3>Tap Screen or Press SpaceBar</h3>
+			<p>to</p>
+			<h4>jump off platforms...</h4>
+			<img src="images/jumping-right/7.png" alt="Jumping" width="80">
+		</div>
+		<div id="tut-5" class="start-hidden tutorial-page">
+			<h4>use jetpack...</h4>
+			<img src="images/jet-pack/5.png" alt="Jumping" width="45">
+			<img src="images/falling-right/0.png" alt="Jumping" width="80">
+		</div>
+		<div id="tut-6" class="start-hidden tutorial-page">
+			<h5>...or float helplessly.</h5>
+		</div>
+		<h1 id="continue">Continue</h1>
+	</div>
+	<div id="credits" class="start-hidden">
+		<h1>Credits</h1>
+		<p>Artists:</p>
+		<h4>Irina Mir (irmirx)</h4>
+		<h4 style="font-size: 10px;">Miguel Lopez Valenciano</h4>
+		<img src="images/jumping-left/7.png" alt="Astronaut" width="80">
+		<img src="images/asteroid/0.png" alt="Asteroid" width="100">
+		<img src="images/jumping-right/7.png" alt="Astronaut" width="80">
+		<p>Creator:</p>
+		<h3>David Wolgemuth</h3>
+		<h1 id="return">Menu</h1>
+	</div>
+
+	<canvas id="canvas" width="345" height="500" class="start-hidden"></canvas>
+	<p class="start-hidden">Pause</p>
+	<div id="ingame-messages">
+		<h2 id="ready" class="ingame-message start-hidden">Ready?</h2>
+		<h2 id="go" class="ingame-message start-hidden">Go!</h2>
+		<h2 id="game-over" class="ingame-message start-hidden">Game Over</h2>
+		<h2 id="play-again" class="ingame-message start-hidden">Play Again</h2>
+		<h2 id="return-main-menu" class="ingame-message start-hidden" style="bottom: 20%;">Main Menu</h2>
+	</div>
+	
+</body>
+</html>
