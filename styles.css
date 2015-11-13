@@ -63,6 +63,13 @@ canvas {
 #tutorial, #credits {
 	text-align: center;
 }
+#audio-options {
+	display: inline;
+	top: 20%;
+	position: absolute;
+	width: 100%;
+	text-align: center;
+}
 #continue {
 	width: 100%;
 	position: fixed;

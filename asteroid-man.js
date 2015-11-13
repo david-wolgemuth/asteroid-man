@@ -4,6 +4,7 @@ $(".start-hidden").hide();
 // $("#loading-bar-outline, #loading-bar-outline *").show();
 // $("#canvas").hide();
 // $("#menu").hide();
+var WebAudioAPISoundManager, WebAudioAPISound;
 
 window.requestAnimFrame = (function(){
     return  window.requestAnimationFrame       || 
@@ -81,6 +82,29 @@ JUMP_SPEED = 3;
 DRIFT_SPEED = 0.1;
 GAME_SPEED = 3;
 
+var Loadbar = {
+    loaded:  0,
+    total: 0,
+    onload: function() {
+        Loadbar.loaded++;
+        var percent = 100 * Loadbar.loaded / Loadbar.total;
+        $("#loading-bar").css("width", percent + "%");
+        if (percent == 100) {
+            $("#loading-bar-outline").hide();
+            $("#audio-options").show();
+            $("#audio-on").click(function() {
+                Sounds.muted = false;
+                $("#audio-options").hide();
+                MenuBar.init();
+            });
+            $("#audio-off").click(function() {
+                $("#audio-options").hide();
+                MenuBar.init();
+            });
+            
+        }
+    },
+};
 var Images = {
     falling: {
         right: [],
@@ -98,17 +122,6 @@ var Images = {
     asteroid: [],
     explosion: [],
     comet: [],
-    totalNumber: 0,
-    loadedNumber: 0,
-
-    onload: function() {
-        Images.loadedNumber++;
-        var percent = 100 * Images.loadedNumber / Images.totalNumber;
-        $("#loading-bar").css("width", percent + "%");
-        if (percent == 100) {
-            MenuBar.init();
-        }
-    },
 
     load: function(destination, path, length) {
         for (var i = 0; i < length; i++) {
@@ -116,8 +129,8 @@ var Images = {
             path_i = 'images/' + path + '/' + i + '.png';
             image.src = path_i;
             destination.push(image);
-            image.onload = Images.onload;
-            Images.totalNumber++;
+            image.onload = Loadbar.onload;
+            Loadbar.total++;
         }
     },
 
@@ -140,7 +153,178 @@ var Images = {
             var d = destinations[i];
             Images.load(d[0], d[1], d[2]);
         }
-        $("#totalImage").text(Images.totalNumber);
+    }
+};
+var Sounds = {
+    muted: true,
+    theme: [],
+    coin: [],
+    asteroid: [],
+    comet: [],
+    credits: [],
+    jetPack: [],
+    empty_jetPack: [],
+    life: [],
+    game_over: [],
+    fuel: [],
+    go: [],
+    main_menu: [],
+    jump: [],
+    load: function(destination, path, x, volume, loop) {
+        for (var i = 0; i < x; i++) {
+            var audio = new WebAudioAPISound('audio/' + path + '/' + i, //+ '.mp3',
+                    {loop: loop});
+            audio.volume = volume;
+            Loadbar.total++;
+            destination.push(audio);
+        }
+        destination.random = function() {
+            destination[Random.range(0, destination.length-1)].play();
+        };
+    },
+    webAudio: function() {
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            window.audioContext = new window.AudioContext();
+        } catch (e) {
+            console.log("No Web Audio API support");
+        }
+
+        /*
+         * WebAudioAPISoundManager Constructor
+         */
+         WebAudioAPISoundManager = function (context) {
+            this.context = context;
+            this.bufferList = {};
+            this.playingSounds = {};
+        };
+
+        /*
+         * WebAudioAPISoundManager Prototype
+         */
+        WebAudioAPISoundManager.prototype = {
+             addSound: function (url) {
+                // Load buffer asynchronously
+                var request = new XMLHttpRequest();
+                request.open("GET", url, true);
+                request.responseType = "arraybuffer";
+
+                var self = this;
+
+                request.onload = function () {
+                    // Asynchronously decode the audio file data in request.response
+                    Loadbar.onload();
+                    self.context.decodeAudioData(
+                        request.response,
+
+                        function (buffer) {
+                            if (!buffer) {
+                                alert('error decoding file data: ' + url);
+                                return;
+                            }
+                            self.bufferList[url] = buffer;
+                        });
+                };
+
+                request.onerror = function () {
+                    console.log('BufferLoader: XHR error');
+                };
+
+                request.send();
+            },
+            stopSoundWithUrl: function(url) {
+                if(this.playingSounds.hasOwnProperty(url)){
+                    for(var i in this.playingSounds[url]){
+                        if(this.playingSounds[url].hasOwnProperty(i))
+                            this.playingSounds[url][i].stop(0);
+                    }
+                }
+            }
+        };
+
+        /*
+         * WebAudioAPISound Constructor
+         */
+         WebAudioAPISound = function (url, options) {
+            this.settings = {
+                loop: false
+            };
+
+            for(var i in options){
+                if(options.hasOwnProperty(i))
+                    this.settings[i] = options[i];
+            }
+
+            this.url = url + '.mp3';
+            window.webAudioAPISoundManager = window.webAudioAPISoundManager || new WebAudioAPISoundManager(window.audioContext);
+            this.manager = window.webAudioAPISoundManager;
+            this.manager.addSound(this.url);
+        };
+
+        /*
+         * WebAudioAPISound Prototype
+         */
+        WebAudioAPISound.prototype = {
+            play: function () {
+                if (Sounds.muted === true)
+                    return;
+                var buffer = this.manager.bufferList[this.url];
+                //Only play if it's loaded yet
+                if (typeof buffer !== "undefined") {
+                    var source = this.makeSource(buffer);
+                    source.loop = this.settings.loop;
+                    source.start(0);
+
+                    if(!this.manager.playingSounds.hasOwnProperty(this.url))
+                        this.manager.playingSounds[this.url] = [];
+                    this.manager.playingSounds[this.url].push(source);
+                }
+            },
+            stop: function () {
+                this.manager.stopSoundWithUrl(this.url);
+            },
+            getVolume: function () {
+                return this.translateVolume(this.volume, true);
+            },
+            //Expect to receive in range 0-100
+            setVolume: function (volume) {
+                this.volume = this.translateVolume(volume);
+            },
+            translateVolume: function(volume, inverse){
+                return inverse ? volume * 100 : volume / 100;
+            },
+            makeSource: function (buffer) {
+                var source = this.manager.context.createBufferSource();
+                var gainNode = this.manager.context.createGain();
+                gainNode.gain.value = this.volume;
+                source.buffer = buffer;
+                source.connect(gainNode);
+                gainNode.connect(this.manager.context.destination);
+                return source;
+            }
+        };
+    },
+    init: function() {
+        Sounds.webAudio();
+        var destinations = [
+            [Sounds.theme, 'theme', 1, 0.2, true],
+            [Sounds.fuel, 'fuel', 1, 1],
+            [Sounds.coin, 'coin', 11, 1],
+            [Sounds.asteroid, 'asteroid', 2, 0.5],
+            [Sounds.comet, 'comet', 1, 0.5],
+            [Sounds.credits, 'credits', 2, 0.7],
+            [Sounds.empty_jetPack, 'empty-jetpack', 2, 1],
+            [Sounds.life, 'life', 1, 1],
+            [Sounds.go, 'go', 1, 1],
+            [Sounds.main_menu, 'main-menu', 1, 1],
+            [Sounds.jetPack, 'jet-pack', 1, 0.4],
+            [Sounds.jump, 'jump', 3, 1.5],
+            [Sounds.game_over, 'game-over', 1, 1]
+        ];
+        for (var i = 0; i < destinations.length; i++) {
+            var d = destinations[i];
+            Sounds.load(d[0], d[1], d[2], d[3], d[4]);
+        }
     }
 };
 Random = {
@@ -273,18 +457,23 @@ Draw = {
 };
 
 MenuBar = {
+    continueI: 1,
     init: function() {
-        $("#loading-bar-outline").hide();
+        Sounds.theme[0].stop();
+        Sounds.main_menu[0].play();
+        Sounds.credits[0].play();
         $("#menu, #menu *").show();
         $("#show-tutorial").click(function() { MenuBar.tutorial(); });
         $("#show-credits").click(function() { MenuBar.credits(); });
         $("#play").click(function() { MenuBar.play(); });
-    },
-    play: function() {
-        $("#menu").hide();
-        $("body").css("background", "#AAA");
-        $("#canvas").show();
+        $("#return").click(function() {
+            Sounds.coin.random();
+            $("#credits").hide();
+            $("#menu").show();
+        });
         $("#return-main-menu").click(function() {
+            Sounds.credits[0].play();
+            Sounds.theme[0].stop();
             $("#play-again").hide();
             $("#return-main-menu").hide();
             $("#canvas").hide();
@@ -299,31 +488,35 @@ MenuBar = {
             window.cancelAnimationFrame(Session.animation);
             Session.init();
         });
-        Session.init();
-    },
-    tutorial: function() {
-        $("#menu").hide();
-        $("#tutorial").show();
-        var i = 1;
-        $("#tut-" + i).show();
         $("#continue").click(function() {
-            $("#tut-" + i).hide();
-            i++;
-            if (i == 7) {
+            Sounds.coin[MenuBar.continueI].play();
+            $("#tut-" + MenuBar.continueI).hide();
+            MenuBar.continueI++;
+            if (MenuBar.continueI == 7) {
                 $("#tutorial").hide();
                 $("#menu").show();
             } else {
-                $("#tut-" + i).show();
+                $("#tut-" + MenuBar.continueI).show();
             }
         });
     },
+    play: function() {
+        $("#menu").hide();
+        $("body").css("background", "#AAA");
+        $("#canvas").show();
+        Session.init();
+    },
+    tutorial: function() {
+        MenuBar.continueI = 1;
+        Sounds.coin[0].play();
+        $("#menu").hide();
+        $("#tutorial").show();
+        $("#tut-" + MenuBar.continueI).show();
+    },
     credits: function() {
+        Sounds.credits[1].play();
         $("#menu").hide();
         $("#credits").show();
-        $("#return").click(function() {
-            $("#credits").hide();
-            $("#menu").show();
-        });
     },
 };
 
@@ -344,6 +537,9 @@ Session = {
     ratio: null,
 
     init: function() {
+        Sounds.theme[0].stop();
+        Sounds.theme[0].play();
+        Sounds.life[0].play();
         Session.canvas = $("#canvas")[0];
         Session.ctx = Session.canvas.getContext("2d");
         Session.ua = navigator.userAgent.toLowerCase();
@@ -381,6 +577,7 @@ Session = {
         if ($("#ready").is(":visible")) {
             $("#ready").hide();
             $("#go").show();
+            Sounds.go[0].play();
             Session.game.running = true;
             return true;
         } else if ($("#game-over").is(":visible")) {
@@ -408,6 +605,7 @@ Session = {
         if (Session.game.running === true) {
                 Session.game.player.jump();
         }
+
     }
 };    
 
@@ -502,6 +700,7 @@ function Game() {
     };
 
     this.gameOver = function() {
+        Sounds.game_over[0].play();
         $("#game-over").show();
         this.running = false;
     };
@@ -627,19 +826,24 @@ function Player() {
             this.xVel = JUMP_SPEED;
             this.direction = RIGHT;
             this.jumping = true;
+            Sounds.jump.random();
         } else if (right === true) {
             this.x -= INITIAL_JUMP;
             this.xVel = -JUMP_SPEED;
             this.direction = LEFT;
             this.jumping = true;
+            Sounds.jump.random();
         } else if (this.jetPackI < 0 && this.fuel > 0) {
             if (this.direction === RIGHT) {
                 this.xVel += JETPACK_SPEED;
             } else if (this.direction === LEFT) {
                 this.xVel -= JETPACK_SPEED;
             }
+            Sounds.jetPack.random();
             this.fuel -= 2;
             this.jetPackI = 0;
+        } else if (this.fuel <= 0) {
+            Sounds.empty_jetPack[0].play();
         }
     };
     this.draw = function() {
@@ -751,6 +955,7 @@ function Sprite() {
         this.angle = Random.range(0, 300);
         this.spinSpeed = ASTEROID_ROTATION_SPEED / Random.range(-10, 10);
         this.collision = function() {
+            Sounds.asteroid.random();
             this.destroy = true;
             this.arg = HIT_PLAYER;
             var explosion = new Sprite();
@@ -798,6 +1003,7 @@ function Sprite() {
         this.type = 'Fuel';
         this.makeRect(x, HEIGHT, FUEL_W, FUEL_H);
         this.collision = function() {
+            Sounds.fuel[0].play();
             this.destroy = true;
             this.arg = FUEL_COLLECTED;
         };
@@ -809,6 +1015,7 @@ function Sprite() {
         this.type = 'Life';
         this.makeRect(x, HEIGHT, PLAYER_W, PLAYER_H);
         this.collision = function() {
+            Sounds.life[0].play();
             this.destroy = true;
             this.arg = LIFE_COLLECTED;
         };
@@ -821,6 +1028,7 @@ function Sprite() {
         this.imageI = 0;
         this.makeCircle(x, HEIGHT, COIN_R);
         this.collision = function() {
+            Sounds.coin.random();
             this.destroy = true;
             this.arg = COIN_COLLECTED;
         };
@@ -849,7 +1057,7 @@ function Sprite() {
     this.comet = function(x, y, w) {
         this.type = 'comet';
         this.makeRect(x, y, w, w);
-        this.scoreValue = 4;
+        this.scoreValue = 2;
         this.imageI = 0;
         this.direction = Random.bool(1) ? 1: -1;
         this.xVel = 0;
@@ -857,6 +1065,8 @@ function Sprite() {
         this.maxXVel = Random.range(2, 6);
         this.collision = function() {
             this.imageI = 6;
+            if (this.arg != HIT_PLAYER)
+                Sounds.comet.random();
             this.arg = HIT_PLAYER;
         };
         this.specialUpdate = function() {
@@ -883,4 +1093,5 @@ function Sprite() {
     };
 }
     Images.init();
+    Sounds.init();
 });
