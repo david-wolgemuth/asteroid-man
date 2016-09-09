@@ -1,10 +1,10 @@
 $(document).ready(function() {
 window.requestAnimFrame = (function(){
-  return  window.requestAnimationFrame       || 
-          window.webkitRequestAnimationFrame || 
-          window.mozRequestAnimationFrame    || 
-          window.oRequestAnimationFrame      || 
-          window.msRequestAnimationFrame     || 
+  return  window.requestAnimationFrame       ||
+          window.webkitRequestAnimationFrame ||
+          window.mozRequestAnimationFrame    ||
+          window.oRequestAnimationFrame      ||
+          window.msRequestAnimationFrame     ||
           function( callback ){
             window.setTimeout(callback, 1000 / 60);
           };
@@ -148,14 +148,14 @@ function init(numoflives) {
         COIN_FREQUENCY: 80,
         COIN_R: 25,
         MAX_FUEL: 30,
-        MAX_LIVES: 5,
+        MAX_LIVES: 1,
         JETPACK_R: 20,
         INITIAL_JUMP: 5,
         JUMP_RANGE: 16,
         FALLING_IMAGE_SWITCH: 0.1,
         JETPACK_TIME: 0.25,
     };
-    
+
     Game = {
         asteroids: [],
         platforms: [],
@@ -267,11 +267,11 @@ function init(numoflives) {
             if (this.usingJetPack) {
                 png = IMAGES.jetPack[Math.floor(this.jetPackIndex)];
                 if (this.direction === C.RIGHT) {
-                    ctx.drawImage(png, this.x - C.JETPACK_R, this.y + this.h / 2, 
+                    ctx.drawImage(png, this.x - C.JETPACK_R, this.y + this.h / 2,
                         C.JETPACK_R, C.JETPACK_R);
                 }
                 else if (this.direction === C.LEFT) {
-                    ctx.drawImage(png, this.x + this.w * 1.5, this.y + this.h / 2, 
+                    ctx.drawImage(png, this.x + this.w * 1.5, this.y + this.h / 2,
                         C.JETPACK_R, C.JETPACK_R);
                 }
                 this.jetPackIndex += C.JETPACK_TIME;
@@ -281,7 +281,7 @@ function init(numoflives) {
                 }
             }
         },
-    };    
+    };
     // return setInterval(GameLoop, 10);
 }
 
@@ -296,8 +296,8 @@ function Asteroid(x, r) {
         this.y -= Game.speed;
         if (Collision.rectRect(Player, this)){
             this.hitPlayer = true;
-        } 
-        
+        }
+
         var c = this.r * C.ASTEROID_CUSHION;
         // Circular Collision
         // ctx.drawImage(IMAGES.asteroid, this.x - this.r - c, this.y - this.r - c, this.r * 2 + c * 2, this.r * 2 + c * 2);
@@ -441,13 +441,13 @@ Draw = {
         if (fill) {
             ctx.beginPath();
             ctx.rect(x, y, w, h);
-            ctx.closePath(); 
+            ctx.closePath();
             ctx.fill();
         } else {
             ctx.lineWidth = this.lineWidth;
             ctx.strokeRect(x, y, w, h);
         }
-        
+
     },
     circle: function(x, y, r, fill) {
         ctx.beginPath();
@@ -528,7 +528,7 @@ Random = {
 Collision = {
     rectRect: function(rectA, rectB) {
         return !(rectB.x > rectA.x + rectA.w ||
-            rectB.x + rectB.w < rectA.x || 
+            rectB.x + rectB.w < rectA.x ||
             rectB.y > rectA.y + rectA.h ||
             rectB.y + rectB.h < rectA.y
             );
@@ -562,7 +562,7 @@ function GameLoop() {
         if (Random.newAsteroidReady()) {
             Game.asteroids.push(
                 new Asteroid(
-                    Random.asteroidX(), 
+                    Random.asteroidX(),
                     Random.asteroidR()
                     )
                 );
@@ -570,7 +570,7 @@ function GameLoop() {
         if (Random.newPlatformReady()) {
         Game.platforms.push(
             new Platform(
-                Random.platformX(), 
+                Random.platformX(),
                 Random.platformHeight(),
                 Random.platformImage()
                 )
@@ -608,8 +608,8 @@ function GameLoop() {
             new jetFuel(Random.tankX())
             );
         }
-    }    
-    
+    }
+
     for (i = 0; i < Game.platforms.length; i++) {
         var platform = Game.platforms[i];
         platform.update();
@@ -618,7 +618,7 @@ function GameLoop() {
         }
     }
 
-    
+
 
     for (i = 0; i < Game.fuelTanks.length; i++) {
         var tank = Game.fuelTanks[i];
@@ -633,7 +633,7 @@ function GameLoop() {
         }
     }
 
-    
+
     for (i = 0; i < Game.xLives.length; i++) {
         var life = Game.xLives[i];
         life.update();
@@ -647,7 +647,7 @@ function GameLoop() {
             Game.xLives.splice(i, 1);
         }
     }
-    
+
     for (i = 0; i < Game.coins.length; i++) {
         coin = Game.coins[i];
         coin.update();
@@ -699,7 +699,7 @@ function GameLoop() {
         }
     }    Draw.text(60, 200, Game.text[0], '60px Arial');
     Draw.text(80, 300, Game.text[1], '60px Arial');
-    
+
     requestAnimationFrame(GameLoop);
 }
 
